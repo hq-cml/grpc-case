@@ -7,9 +7,14 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"grpc-case/simple/pb"
 	"net"
 	"sync"
+)
+
+const (
+	KeyPath = "/data/share/golang/src/github.com/hq-cml/grpc-case/tls/key/"
 )
 
 // 业务自己的Server，实现各个服务端方法
@@ -27,14 +32,20 @@ func (m *MyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.Hell
 
 // 服务启动起来
 func main() {
+	// 载入证书：两个参数分别是自签证书 & 私钥
+	creds, err := credentials.NewServerTLSFromFile(KeyPath+"test.pem", KeyPath+"test.key")
+	if err != nil {
+		panic(err)
+	}
+
 	// 创建监听端口
 	listener, err := net.Listen("tcp", ":9090")
 	if err != nil {
 		panic(err)
 	}
 
-	// 创建grpc服务
-	grpcServer := grpc.NewServer()
+	// 创建grpc服务，带上证书！！！
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
 
 	// 在grpc服务中，注册业务自己的服务
 	pb.RegisterHelloServiceServer(grpcServer, &MyServer{})
@@ -43,7 +54,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		fmt.Println("Simple Server start!")
+		fmt.Println("TLS Server start!")
 		defer wg.Done()
 		err = grpcServer.Serve(listener)
 		if err != nil {

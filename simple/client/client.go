@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	// 创建链接，此处警用安全传输，没有加密和验证
+	// 创建链接，此处禁用了安全传输，用了一个假的证书，insecure.NewCredentials()，没有加密和验证
 	//conn, err := grpc.Dial("127.0.0.1: 9090", grpc.WithTransportCredentials(insecure.NewCredentials()))   # 废弃
 	//conn, err := grpc.DialContext(context.Background(), "127.0.0.1: 9090", grpc.WithTransportCredentials(insecure.NewCredentials())) # 废弃
 	conn, err := grpc.NewClient("127.0.0.1:9090", grpc.WithTransportCredentials(insecure.NewCredentials()))
