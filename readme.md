@@ -43,5 +43,5 @@ simple：
 tls
     基于tls认证的server和client
 token
-    基于token认证的server和client
+    基于token认证的server和client（简单理解就是多租户服务的ak,sk)
 ```

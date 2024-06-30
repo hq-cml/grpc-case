@@ -1,5 +1,5 @@
 /**
- * 简单客户端
+ * 基于Tls的客户端
  */
 package main
 
@@ -23,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	// 创建链接，此处shi
+	// 创建链接，此处设置证书
 	//conn, err := grpc.NewClient("127.0.0.1:9090", grpc.WithTransportCredentials(insecure.NewCredentials())) // 不指定证书，将会得到错误
 	conn, err := grpc.NewClient("127.0.0.1:9090", grpc.WithTransportCredentials(creds))
 	if err != nil {
