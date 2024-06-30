@@ -1,0 +1,20 @@
+syntax = "proto3"; //指定proto3语法
+
+//指定生成的代码的目录命和包名（第一个点表示目录，pb表示包名）
+option go_package = ".;pb";
+
+//定义Service
+service HelloService {
+  //Service的一个方法
+  rpc SayHello (HelloRequest) returns (HelloReply);
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
