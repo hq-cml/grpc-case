@@ -41,7 +41,7 @@
 simple：
     最简单直接的client和server的例子，直击问题本质
 tls
-    基于tls认证的server和client
+    基于tls认证的server和client，使用自建证书，说明问题
 token
     基于token认证的server和client（简单理解就是多租户服务的ak,sk)
 ```
