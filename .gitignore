@@ -1,4 +1,4 @@
 grpc-case
 .idea/
-server
-client
+discovery/demo_base/client/client
+discovery/demo_base/server/server
