@@ -6,17 +6,17 @@ package demo_etcd
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Node struct {
 	Name string `json:"name"` // 名称
-	Addr string `json:"addr"` // 地址
+	Addr string `json:"addr"` // ip+port
 }
 
 // 把服务名中的 . 转换为 /
 func (s Node) transName() string {
-	return strings.ReplaceAll(s.Name, ".", "/")
+	//return strings.ReplaceAll(s.Name, ".", "/")
+	return s.Name
 }
 
 // 构建节点 key

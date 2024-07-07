@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultEtcdAddr = "127.0.0.1:2379"
+)
+
 type etcdRegister struct {
 	etcdCli     *etcdV3.Client // etcd句柄
 	etcdAddrs   []string       // etcd服务地址
@@ -27,6 +31,27 @@ type etcdRegister struct {
 	once        sync.Once
 }
 
+func init() {
+	envEtcdAddr := os.Getenv("DISCOVERY_HOST")
+	if envEtcdAddr == "" {
+		fmt.Printf("Use Default EtcdAddr :%v\n", DefaultEtcdAddr)
+		envEtcdAddr = envEtcdAddr
+	}
+	eResolver = &etcdResolver{
+		mr:            make(map[string]resolver.Resolver),
+		dialTimeout:   time.Second * 3,
+		targetNodeSet: make(map[string]*Node),
+		serviceNodes:  make(map[string]map[string]*Node),
+	}
+	if len(envEtcdAddr) > 0 {
+		eResolver.etcdAddrs = strings.Split(envEtcdAddr, ";")
+	}
+
+	var ctx context.Context
+	ctx, eResolver.cancel = context.WithCancel(context.Background())
+	eResolver.start(ctx)
+}
+
 // 新增注册的服务节点
 func (e *etcdRegister) addServiceNode(node *Node) {
 	e.nodeSet[node.buildKey()] = node
@@ -34,16 +59,14 @@ func (e *etcdRegister) addServiceNode(node *Node) {
 	// 新增注册节点的时候，开始执行注册任务
 	e.once.Do(
 		func() {
-			var ctx context.Context
-			ctx, e.cancel = context.WithCancel(context.Background())
-			e.start(ctx)
+
 		})
 }
 
 // 开始注册任务
 func (e *etcdRegister) start(ctx context.Context) {
 	if len(e.etcdAddrs) == 0 {
-		panic("demo_etcd should call SetDiscoveryAddress or set env DISCOVERY_HOST")
+		panic("demo_etcd should call SetEtcdAddress or set env DISCOVERY_HOST")
 	}
 
 	// 连接etcd
@@ -127,19 +150,5 @@ func (e *etcdRegister) stop() {
 		_, _ = e.etcdCli.Delete(cctx, n.buildKey())
 		cancel()
 		fmt.Printf("delete %s:%s from etcd\n", n.buildKey(), string(value))
-	}
-}
-
-// 注册器初始化
-func etcdRegisterInit() {
-	envEtcdAddr := os.Getenv("DISCOVERY_HOST")
-	eResolver = &etcdResolver{
-		mr:            make(map[string]resolver.Resolver),
-		dialTimeout:   time.Second * 3,
-		targetNodeSet: make(map[string]*Node),
-		serviceNodes:  make(map[string]map[string]*Node),
-	}
-	if len(envEtcdAddr) > 0 {
-		eResolver.etcdAddrs = strings.Split(envEtcdAddr, ";")
 	}
 }

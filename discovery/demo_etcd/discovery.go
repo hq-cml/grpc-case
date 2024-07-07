@@ -7,11 +7,11 @@ var eResolver *etcdResolver
 var eRegister *etcdRegister
 
 func init() {
-	etcdRegisterInit()
+	//etcdRegisterInit()
 	etcdResolverInit()
 }
 
-func SetDiscoveryAddress(address []string) {
+func SetEtcdAddress(address []string) {
 	if len(address) == 0 {
 		return
 	}

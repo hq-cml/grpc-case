@@ -35,10 +35,10 @@ func (*testCc) ParseServiceConfig(serviceConfigJSON string) *serviceconfig.Parse
 }
 
 func Test(t *testing.T) {
-	SetDiscoveryAddress([]string{"192.168.31.124:2379"})
+	SetEtcdAddress([]string{"127.0.0.1:2379"})
 	node := &Node{
 		Name: "api.test.com",
-		Addr: "127.0.0.1",
+		Addr: "127.0.0.1:8888",
 	}
 	eRegister.addServiceNode(node)
 

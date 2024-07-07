@@ -149,7 +149,7 @@ func (e *etcdResolver) resolverAll(ctx context.Context) {
 
 func (e *etcdResolver) start(ctx context.Context) {
 	if len(e.etcdAddrs) == 0 {
-		panic("demo_etcd should call SetDiscoveryAddress or set env DISCOVERY_HOST")
+		panic("demo_etcd should call SetEtcdAddress or set env DISCOVERY_HOST")
 	}
 
 	var err error

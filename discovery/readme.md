@@ -1,12 +1,17 @@
-# 服务发现的例子：
+# 服务发现 & 负载均衡
 
-## 1. 基本原理
+## 基本原理
 * 官方文档：https://github.com/grpc/grpc/blob/master/doc/naming.md
 * 当服务端有多个实例的时候，就存在2个问题：服务发现和负载均衡
 * gRPC中的默认服务发现是使用DNS，同时提供了一些接口，业务实现这些接口就可以自定义服务发现的功能
-* 服务发现遵循RFC 3986，比如服务地址 xxx://yyyy，则xxx就是Scheme，yyyy为实际的service名字
+* 服务发现的名字遵循RFC 3986，比如服务地址 xxx://yyyy，则xxx就是Scheme，yyyy为实际的service名字
 * 负载均衡的算法也提前实现了一些基础的，可以直接选用，最常见的就是RoundRobin
 
+## RFC 3986中定义的URI语法
+```
+scheme:[//[user[:password]@]host[:port]][/path][?query][#fragment]
+```
+![avatar](img/rfc3986.png)
 
 ## 核心概念
 * 几个比较抽象的概念，最简单的解释：
