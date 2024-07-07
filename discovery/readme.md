@@ -4,7 +4,7 @@
 * 官方文档：https://github.com/grpc/grpc/blob/master/doc/naming.md
 * 当服务端有多个实例的时候，就存在2个问题：服务发现和负载均衡
 * gRPC中的默认服务发现是使用DNS，同时提供了一些接口，业务实现这些接口就可以自定义服务发现的功能
-* 服务发现的名字遵循RFC 3986，比如服务地址 xxx://yyyy，则xxx就是Scheme，yyyy为实际的service名字
+* // 服务发现遵循RFC 3986，比如服务地址 xxx:///yyyy，则xxx就是Scheme，yyyy实际上是解析后的Path，把它作为service名字来使用
 * 负载均衡的算法也提前实现了一些基础的，可以直接选用，最常见的就是RoundRobin
 
 ## RFC 3986中定义的URI语法
@@ -19,6 +19,9 @@ scheme:[//[user[:password]@]host[:port]][/path][?query][#fragment]
 * Builder：是用来生成业务自己的Resolver
 * Balancer：平衡器，接收从 Resolver 发送的服务端列表，建立并维护（长）连接状态；每次当 Client 发起 Rpc 调用时，按照一定算法从连接池中选择一个连接进行 Rpc 调用
 
+## Scheme、Builder、Resolver的关系
+* 每个 Scheme 对应一个 Builder
+* 相同 Scheme 每个不同 target 对应一个 Resolver, 通过 builder.Build 实例化
 
 
 ## 核心接口
