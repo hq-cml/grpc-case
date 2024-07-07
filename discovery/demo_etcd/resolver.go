@@ -1,9 +1,12 @@
 /**
- *实现 Resolver 接口：
+ * 实现 Resolver 接口：
  */
 package demo_etcd
 
-import "google.golang.org/grpc/resolver"
+import (
+	"fmt"
+	"google.golang.org/grpc/resolver"
+)
 
 type IResolver interface {
 	getServiceNodes(host string) []*Node
@@ -28,7 +31,7 @@ func (m manuResolver) ResolveNow(options resolver.ResolveNowOptions) {
 	if err := m.cc.UpdateState(resolver.State{
 		Addresses: addresses,
 	}); err != nil {
-		logger.Errorf("resolver update cc state error:%s", err.Error())
+		fmt.Printf("resolver update cc state error:%s\n", err.Error())
 	}
 }
 

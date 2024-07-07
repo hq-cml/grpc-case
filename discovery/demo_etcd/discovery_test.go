@@ -43,7 +43,7 @@ func Test(t *testing.T) {
 	eRegister.addServiceNode(node)
 
 	cc := &testCc{}
-	r, _ := builder{}.Build(resolver.Target{URL: url.URL{Host: node.Name}}, cc, resolver.BuildOptions{})
+	r, _ := myBuilder{}.Build(resolver.Target{URL: url.URL{Host: node.Name}}, cc, resolver.BuildOptions{})
 
 	t.Run("test1", func(t *testing.T) {
 		r.ResolveNow(resolver.ResolveNowOptions{})

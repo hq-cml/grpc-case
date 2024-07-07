@@ -6,6 +6,7 @@ package demo_etcd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	etcdV3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
 	"os"
@@ -19,28 +20,18 @@ const (
 )
 
 type etcdResolver struct {
-	// 记录所有创建的解析器，同一个host只创建一个解析器
-	mr    map[string]resolver.Resolver
-	mrMux sync.RWMutex
+	etcdCli       *etcdV3.Client               // etcd 客户端
+	etcdAddrs     []string                     // etcd 地址
+	dialTimeout   time.Duration                // 连接 etcd 超时时间
+	mr            map[string]resolver.Resolver // 记录所有创建的解析器，同一个host只创建一个解析器
+	targetNodeSet map[string]*Node             // 需要解析的目标节点
+	serviceNodes  map[string]map[string]*Node  // 解析到的服务节点， host:addr:*Node
 
-	// etcd 客户端
-	cli *etcdV3.Client
-	// etcd 地址
-	etcdAddrs []string
-	// 连接 etcd 超时时间
-	dialTimeout time.Duration
-
-	// 需要解析的目标节点
-	tnsMux        sync.RWMutex
-	targetNodeSet map[string]*Node
-
-	// 解析到的服务节点， host:addr:*Node
-	snsMux       sync.RWMutex
-	serviceNodes map[string]map[string]*Node
-
+	tnsMux sync.RWMutex
+	snsMux sync.RWMutex
 	cancel context.CancelFunc
-
-	once sync.Once
+	mrMux  sync.RWMutex
+	once   sync.Once
 }
 
 // 获取当前解析到的服务节点
@@ -65,7 +56,7 @@ func (e *etcdResolver) setServiceNodes(name string, nodes ...*Node) {
 		ns = make(map[string]*Node)
 	}
 	for i := range nodes {
-		logger.Infof("resolver node [%s:%s]", name, nodes[i].Addr)
+		fmt.Printf("resolver node [%s:%s]\n", name, nodes[i].Addr)
 		ns[nodes[i].Addr] = nodes[i]
 	}
 	e.serviceNodes[name] = ns
@@ -131,17 +122,17 @@ func (e *etcdResolver) resolverAll(ctx context.Context) {
 	for _, node := range nodes {
 		// 根据前缀获取节点信息
 		cctx, cancel := context.WithTimeout(context.Background(), e.dialTimeout)
-		rsp, err := e.cli.Get(cctx, node.buildPrefix(), etcdV3.WithPrefix())
+		rsp, err := e.etcdCli.Get(cctx, node.buildPrefix(), etcdV3.WithPrefix())
 		cancel()
 		if err != nil {
-			logger.Errorf("get service node [%s] error:%s", node.Name, err.Error())
+			fmt.Printf("get service node [%s] error:%s\n", node.Name, err.Error())
 			continue
 		}
 		for j := range rsp.Kvs {
 			n := &Node{}
 			err = json.Unmarshal(rsp.Kvs[j].Value, n)
 			if err != nil {
-				logger.Errorf("get service node [%s] error:%s", node.Name, err.Error())
+				fmt.Printf("get service node [%s] error:%s\n", node.Name, err.Error())
 				continue
 			}
 			e.setServiceNodes(node.Name, n)
@@ -162,7 +153,7 @@ func (e *etcdResolver) start(ctx context.Context) {
 	}
 
 	var err error
-	e.cli, err = etcdV3.New(etcdV3.Config{
+	e.etcdCli, err = etcdV3.New(etcdV3.Config{
 		Endpoints:   e.etcdAddrs,
 		DialTimeout: e.dialTimeout,
 	})
@@ -183,7 +174,7 @@ func (e *etcdResolver) start(ctx context.Context) {
 				e.resolverAll(ctx)
 
 			case <-ctx.Done():
-				logger.Infoln("resolver ticker exit")
+				fmt.Println("resolver ticker exit")
 				return
 			}
 		}
@@ -193,7 +184,7 @@ func (e *etcdResolver) start(ctx context.Context) {
 	nodes := e.getTargetNodes()
 	for i := range nodes {
 		go func(node *Node) {
-			wc := e.cli.Watch(ctx, node.buildPrefix(), etcdV3.WithPrefix())
+			wc := e.etcdCli.Watch(ctx, node.buildPrefix(), etcdV3.WithPrefix())
 			for {
 				select {
 				case rsp := <-wc:
@@ -203,7 +194,7 @@ func (e *etcdResolver) start(ctx context.Context) {
 							n := &Node{}
 							err = json.Unmarshal(event.Kv.Value, n)
 							if err != nil {
-								logger.Errorf("unmarshal to node error:%s", err.Error())
+								fmt.Printf("unmarshal to node error:%s", err.Error())
 								continue
 							}
 							e.setServiceNodes(node.Name, n)
@@ -211,14 +202,14 @@ func (e *etcdResolver) start(ctx context.Context) {
 							n := &Node{}
 							err = json.Unmarshal(event.Kv.Value, n)
 							if err != nil {
-								logger.Errorf("unmarshal to node error:%s", err.Error())
+								fmt.Printf("unmarshal to node error:%s\n", err.Error())
 								continue
 							}
 							e.removeServiceNode(node.Name, n.Addr)
 						}
 					}
 				case <-ctx.Done():
-					logger.Infoln("resolver watcher exit")
+					fmt.Println("resolver watcher exit")
 					return
 				}
 			}
@@ -227,7 +218,7 @@ func (e *etcdResolver) start(ctx context.Context) {
 }
 
 func (e *etcdResolver) stop() {
-	logger.Infoln("resolver stop")
+	fmt.Println("resolver stop")
 	e.cancel()
 }
 
@@ -235,7 +226,7 @@ func etcdResolverInit() {
 	envEtcdAddr := os.Getenv("DISCOVERY_HOST")
 	eRegister = &etcdRegister{
 		nodeSet:     make(map[string]*Node),
-		cli:         nil,
+		etcdCli:     nil,
 		dialTimeout: time.Second * 3,
 		ttl:         3,
 	}

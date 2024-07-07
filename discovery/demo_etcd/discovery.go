@@ -3,17 +3,10 @@
  */
 package demo_etcd
 
-import (
-	"github.com/sirupsen/logrus"
-)
-
-var logger *logrus.Logger
-
 var eResolver *etcdResolver
 var eRegister *etcdRegister
 
 func init() {
-	loggerInit()
 	etcdRegisterInit()
 	etcdResolverInit()
 }
@@ -28,8 +21,4 @@ func SetDiscoveryAddress(address []string) {
 
 func AddServiceNode(node *Node) {
 	eRegister.addServiceNode(node)
-}
-
-func SetLogger(l *logrus.Logger) {
-	logger = l
 }

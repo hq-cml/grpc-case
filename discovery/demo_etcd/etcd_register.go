@@ -6,6 +6,7 @@ package demo_etcd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	etcdV3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
 	"os"
@@ -15,21 +16,15 @@ import (
 )
 
 type etcdRegister struct {
-	// 注册节点set
-	nodeSet map[string]*Node
-	// etcd句柄
-	cli *etcdV3.Client
-	// etcd服务地址
-	etcdAddrs []string
-	// 连接超时时间
-	dialTimeout time.Duration
-	// etcd租约id
-	etcdLeaseId etcdV3.LeaseID
-	// 注册节点过期时间
-	ttl int64
-	// 取消函数，用去结束注册任务
-	cancel context.CancelFunc
-	once   sync.Once
+	etcdCli     *etcdV3.Client // etcd句柄
+	etcdAddrs   []string       // etcd服务地址
+	dialTimeout time.Duration  // 连接超时时间
+
+	nodeSet     map[string]*Node   // 注册节点set
+	etcdLeaseId etcdV3.LeaseID     // etcd租约id
+	ttl         int64              // 注册节点过期时间
+	cancel      context.CancelFunc // 取消函数，用去结束注册任务
+	once        sync.Once
 }
 
 // 新增注册的服务节点
@@ -53,7 +48,7 @@ func (e *etcdRegister) start(ctx context.Context) {
 
 	// 连接etcd
 	var err error
-	e.cli, err = etcdV3.New(etcdV3.Config{
+	e.etcdCli, err = etcdV3.New(etcdV3.Config{
 		Endpoints:   e.etcdAddrs,
 		DialTimeout: e.dialTimeout,
 	})
@@ -64,7 +59,7 @@ func (e *etcdRegister) start(ctx context.Context) {
 
 	// 创建租约
 	cctx, cancel := context.WithTimeout(ctx, e.dialTimeout)
-	rsp, err := e.cli.Grant(cctx, e.ttl)
+	rsp, err := e.etcdCli.Grant(cctx, e.ttl)
 	if err != nil {
 		panic(err)
 	}
@@ -73,9 +68,9 @@ func (e *etcdRegister) start(ctx context.Context) {
 	e.etcdLeaseId = rsp.ID
 
 	// 保活
-	kc, err := e.cli.KeepAlive(ctx, rsp.ID)
+	kc, err := e.etcdCli.KeepAlive(ctx, rsp.ID)
 	if err != nil {
-		logger.Errorf("etcd keepalive error:%s", err.Error())
+		fmt.Printf("etcd keepalive error:%s\n", err.Error())
 	}
 
 	go func() {
@@ -86,7 +81,7 @@ func (e *etcdRegister) start(ctx context.Context) {
 					e.register(ctx)
 				}
 			case <-ctx.Done():
-				logger.Infoln("register exit")
+				fmt.Println("register exit")
 				return
 			}
 		}
@@ -99,25 +94,25 @@ func (e *etcdRegister) register(ctx context.Context) {
 	for _, n := range e.nodeSet {
 		value, err := json.Marshal(n)
 		if err != nil {
-			logger.Errorf("json marshal node:%s error:%s", n.Name, err.Error())
+			fmt.Printf("json marshal node:%s error:%s\n", n.Name, err.Error())
 			continue
 		}
 		// 使用租约id注册
 		cctx, cancel := context.WithTimeout(ctx, e.dialTimeout)
-		_, err = e.cli.Put(cctx, n.buildKey(), string(value), etcdV3.WithLease(e.etcdLeaseId))
+		_, err = e.etcdCli.Put(cctx, n.buildKey(), string(value), etcdV3.WithLease(e.etcdLeaseId))
 		cancel()
 
 		if err != nil {
-			logger.Errorf("put %s:%s to etcd with lease id %d error:%s", n.buildKey(), string(value), e.etcdLeaseId, err.Error())
+			fmt.Printf("put %s:%s to etcd with lease id %d error:%s\n", n.buildKey(), string(value), e.etcdLeaseId, err.Error())
 			continue
 		}
-		logger.WithField("component", "demo_etcd").Infof("put %s:%s to etcd with lease id %d", n.buildKey(), string(value), e.etcdLeaseId)
+		fmt.Printf("put %s:%s to etcd with lease id %d\n", n.buildKey(), string(value), e.etcdLeaseId)
 	}
 }
 
 // 停止注册任务
 func (e *etcdRegister) stop() {
-	logger.Infoln("register stop")
+	fmt.Println("register stop")
 	// 退出注册任务
 	e.cancel()
 
@@ -125,13 +120,13 @@ func (e *etcdRegister) stop() {
 	for _, n := range e.nodeSet {
 		value, err := json.Marshal(n)
 		if err != nil {
-			logger.Errorf("json marshal node:%s error:%s", n.Name, err.Error())
+			fmt.Printf("json marshal node:%s error:%s\n", n.Name, err.Error())
 			continue
 		}
 		cctx, cancel := context.WithTimeout(context.Background(), e.dialTimeout)
-		_, _ = e.cli.Delete(cctx, n.buildKey())
+		_, _ = e.etcdCli.Delete(cctx, n.buildKey())
 		cancel()
-		logger.Infof("delete %s:%s from etcd", n.buildKey(), string(value))
+		fmt.Printf("delete %s:%s from etcd\n", n.buildKey(), string(value))
 	}
 }
 
