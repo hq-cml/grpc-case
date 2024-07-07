@@ -1,7 +1,7 @@
 /**
  * 注册节点信息到 etcd
  */
-package discovery
+package demo_etcd
 
 import (
 	"context"
@@ -48,7 +48,7 @@ func (e *etcdRegister) addServiceNode(node *Node) {
 // 开始注册任务
 func (e *etcdRegister) start(ctx context.Context) {
 	if len(e.etcdAddrs) == 0 {
-		panic("discovery should call SetDiscoveryAddress or set env DISCOVERY_HOST")
+		panic("demo_etcd should call SetDiscoveryAddress or set env DISCOVERY_HOST")
 	}
 
 	// 连接etcd
@@ -111,7 +111,7 @@ func (e *etcdRegister) register(ctx context.Context) {
 			logger.Errorf("put %s:%s to etcd with lease id %d error:%s", n.buildKey(), string(value), e.etcdLeaseId, err.Error())
 			continue
 		}
-		logger.WithField("component", "discovery").Infof("put %s:%s to etcd with lease id %d", n.buildKey(), string(value), e.etcdLeaseId)
+		logger.WithField("component", "demo_etcd").Infof("put %s:%s to etcd with lease id %d", n.buildKey(), string(value), e.etcdLeaseId)
 	}
 }
 

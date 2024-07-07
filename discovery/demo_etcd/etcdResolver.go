@@ -1,7 +1,7 @@
 /**
  * 从 etcd 解析服务节点
  */
-package discovery
+package demo_etcd
 
 import (
 	"context"
@@ -158,7 +158,7 @@ func (e *etcdResolver) resolverAll(ctx context.Context) {
 
 func (e *etcdResolver) start(ctx context.Context) {
 	if len(e.etcdAddrs) == 0 {
-		panic("discovery should call SetDiscoveryAddress or set env DISCOVERY_HOST")
+		panic("demo_etcd should call SetDiscoveryAddress or set env DISCOVERY_HOST")
 	}
 
 	var err error

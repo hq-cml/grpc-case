@@ -1,7 +1,7 @@
 /**
  * 实现 Builder 接口
  */
-package discovery
+package demo_etcd
 
 import "google.golang.org/grpc/resolver"
 

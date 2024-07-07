@@ -1,4 +1,4 @@
-# 基础服务发现的例子：
+# 服务发现的例子：
 
 ## 1. 基本原理
 * 官方文档：https://github.com/grpc/grpc/blob/master/doc/naming.md
@@ -15,7 +15,7 @@
 * Builder是用来生成业务自己的Resolver
 
 
-![avatar](./img/name-resolver.png)
+![avatar](img/name-resolver.png)
 
 
 ```

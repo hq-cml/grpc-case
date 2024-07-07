@@ -1,7 +1,7 @@
 /**
  *
  */
-package discovery
+package demo_etcd
 
 import (
 	"github.com/sirupsen/logrus"

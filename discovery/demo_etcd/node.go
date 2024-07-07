@@ -5,7 +5,7 @@
 
 这里我们创建个 node 结构保存服务节点信息:
 */
-package discovery
+package demo_etcd
 
 import (
 	"fmt"
