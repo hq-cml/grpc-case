@@ -84,7 +84,7 @@ func main() {
 	//grpcServer := grpc.NewServer(grpc.Creds(creds))
 	grpcServer := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
 
-	// 在grpc服务中，注册业务自己的服务
+	// 在grpc服务中，注册业务自己的服务（也就是将自己的Server对象与grpc服务绑定）
 	pb.RegisterHelloServiceServer(grpcServer, &MyServer{})
 
 	// 启动grpc服务

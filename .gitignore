@@ -1,2 +1,4 @@
 grpc-case
 .idea/
+server
+client

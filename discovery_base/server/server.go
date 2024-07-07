@@ -1,21 +1,21 @@
 /**
- * 基于Tls的服务端
+ * 服务发现服务端，支持指定port
+ * 在简单服务发现的例子中，服务端是比较简单的，只是简单的增加了一个port参数
+ * 服务发现的文章，都在客户端实现（实际场景上，结合ETCD，则需要在服务端增加一些注册的逻辑）
  */
 package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"grpc-case/simple/pb"
 	"net"
 	"sync"
 )
 
-const (
-	KeyPath = "/data/share/golang/src/github.com/hq-cml/grpc-case/tls/key/"
-)
+var portStr *string = flag.String("p", "9090", "port")
 
 // 业务自己的Server，实现各个服务端方法
 type MyServer struct {
@@ -24,7 +24,7 @@ type MyServer struct {
 
 // 实现业务代码
 func (m *MyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
-	fmt.Println("Recv Request:", req.Name)
+	fmt.Printf("Server[%v] Recv Request:%v\n", *portStr, req.Name)
 	return &pb.HelloReply{
 		Message: "Hello " + req.Name,
 	}, nil
@@ -32,20 +32,17 @@ func (m *MyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.Hell
 
 // 服务启动起来
 func main() {
-	// 载入证书：两个参数分别是自签证书 & 私钥
-	creds, err := credentials.NewServerTLSFromFile(KeyPath+"test.pem", KeyPath+"test.key")
-	if err != nil {
-		panic(err)
-	}
+	// 参数解析
+	flag.Parse()
 
 	// 创建监听端口
-	listener, err := net.Listen("tcp", ":9090")
+	listener, err := net.Listen("tcp", ":"+*portStr)
 	if err != nil {
 		panic(err)
 	}
 
-	// 创建grpc服务，带上证书！！！
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	// 创建grpc服务
+	grpcServer := grpc.NewServer()
 
 	// 在grpc服务中，注册业务自己的服务（也就是将自己的Server对象与grpc服务绑定）
 	pb.RegisterHelloServiceServer(grpcServer, &MyServer{})
@@ -54,7 +51,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		fmt.Println("TLS Server start!")
+		fmt.Printf("Server Start! Port:%v\n", *portStr)
 		defer wg.Done()
 		err = grpcServer.Serve(listener)
 		if err != nil {

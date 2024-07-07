@@ -45,13 +45,13 @@ func main() {
 	//conn, err := grpc.NewClient("127.0.0.1:9090", grpc.WithTransportCredentials(creds))
 	conn, err := grpc.NewClient("127.0.0.1:9090",
 		grpc.WithTransportCredentials(insecure.NewCredentials()), // 不使用tls
-		grpc.WithPerRPCCredentials(new(MyClientTokenAuth))) // 使用自实现的Token
+		grpc.WithPerRPCCredentials(new(MyClientTokenAuth)))       // 使用自实现的Token
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
 
-	// 建立连接并创建客户端
+	// 基于连接创建客户端
 	client := pb.NewHelloServiceClient(conn)
 
 	// 执行RPC调用
