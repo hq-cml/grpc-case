@@ -76,3 +76,15 @@ type Resolver interface {
 https://www.lixueduan.com/posts/grpc/11-name-resolver/
 https://blog.csdn.net/daemon365/article/details/139575532
 https://blog.csdn.net/qq_41630102/article/details/137782639
+
+https://pandaychen.github.io/2019/11/11/GRPC-RESOLVER-DEEP-ANALYSIS/
+https://www.liwenzhou.com/posts/Go/name-resolving-and-load-balancing-in-grpc/
+https://blog.cong.moe/post/2021-03-06-grpc-go-discovery-lb/#1-服务端注册
+https://segmentfault.com/a/1190000041286666
+http://www.baker-yuan.cn/articles/297
+https://www.51cto.com/article/759425.html
+
+
+https://www.cnblogs.com/zhaosc-haha/p/17223702.html
+
+
