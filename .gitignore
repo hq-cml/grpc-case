@@ -1,7 +1,7 @@
 grpc-case
 .idea/
-discovery/demo_base/client/client
-discovery/demo_base/server/server
-discovery/demo_etcd/client/client
-discovery/demo_etcd/server/server
+discovery/base/client/client
+discovery/base/server/server
+discovery/etcd/client/client
+discovery/etcd/server/server
 demo_etcd_back

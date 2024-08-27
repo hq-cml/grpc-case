@@ -82,7 +82,7 @@ func main() {
 
 	// 创建grpc服务
 	//grpcServer := grpc.NewServer(grpc.Creds(creds))
-	grpcServer := grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	grpcServer := grpc.NewServer(grpc.Creds(insecure.NewCredentials())) // 不使用tls
 
 	// 在grpc服务中，注册业务自己的服务（也就是将自己的Server对象与grpc服务绑定）
 	pb.RegisterHelloServiceServer(grpcServer, &MyServer{})

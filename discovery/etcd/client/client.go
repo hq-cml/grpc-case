@@ -40,7 +40,7 @@ func main() {
 	client := pb.NewHelloServiceClient(conn)
 
 	// 执行RPC调用
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 300; i++ {
 		// 设置客户端访问超时时间1秒
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()

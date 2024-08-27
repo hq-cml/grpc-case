@@ -6,24 +6,21 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	etcdCLientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
+	"grpc-case/discovery/base"
 	"grpc-case/simple/pb"
 	"net"
-	"strings"
 	"sync"
 	"time"
 )
 
 var portStr *string = flag.String("p", "9090", "port")
-var nameStr *string = flag.String("n", "myservice", "service name")
-
-const (
-	EtcdAddr    = "127.0.0.1:2379"
-	EtcdTimeout = 1
-)
+var nameStr *string = flag.String("n", "myservicename1", "service name")
+var scheme *string = flag.String("s", "etcd", "scheme")
 
 // 业务自己的Server，实现各个服务端方法
 type MyServer struct {
@@ -67,13 +64,20 @@ func main() {
 			panic(err)
 		}
 	}()
+	ctx, cancel := context.WithCancel(context.Background())
 
 	// 服务注册到Etcd
-	ctx, cancel := context.WithCancel(context.Background())
-	err = registerToEtcd(ctx, *nameStr, addr)
-	if err != nil {
-		panic(err)
-	}
+	go func() {
+		for {
+			err = registerToEtcd(ctx, *nameStr, addr)
+			if err != nil && err.Error() == "over" {
+				fmt.Println("退出")
+				return
+			} else {
+				fmt.Println("遇到问题：" + err.Error() + ". 准备重新注册！！！！！！！")
+			}
+		}
+	}()
 
 	// 等待
 	wg.Wait()
@@ -86,27 +90,27 @@ func main() {
 func registerToEtcd(ctx context.Context, service, addr string) error {
 	// 创建客户端
 	etcdCli, err := etcdCLientv3.New(etcdCLientv3.Config{
-		Endpoints:   []string{EtcdAddr},
-		DialTimeout: EtcdTimeout * time.Second,
+		Endpoints:   []string{base.EtcdAddr},
+		DialTimeout: base.EtcdTimeout * time.Second,
 	})
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("etcdCLientv3.New Error:%v", err)
 	}
 
 	// 创建租约
-	resp, err := etcdCli.Grant(ctx, 1)
+	resp, err := etcdCli.Grant(ctx, 2) // ttl = 2，表示存活时间是2秒，如果不续约就消失
 	if err != nil {
 		return fmt.Errorf("Grant Err:%v", err)
 	}
-	fmt.Println("Grant-------", resp.ID)
+	fmt.Println("申请租约：Grant-------", resp.ID)
 
 	// 注册
-	key := strings.Join([]string{service, addr}, "/")
+	key := base.GenInstancePath(*scheme, service, addr)
 	_, err = etcdCli.Put(ctx, key, addr, etcdCLientv3.WithLease(resp.ID))
 	if err != nil {
 		return fmt.Errorf("Etcd Put Err:%v", err)
 	}
-	fmt.Println("Put-------", key, "=>", addr)
+	fmt.Println("注册：Put-------", key, "=>", addr)
 
 	// 租约保活
 	respCh, err := etcdCli.KeepAlive(ctx, resp.ID)
@@ -115,22 +119,26 @@ func registerToEtcd(ctx context.Context, service, addr string) error {
 	}
 
 	// 异步监听保活的结果
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				fmt.Println("实例退出")
-				return
-			case v, ok := <-respCh:
-				if v == nil {
-					fmt.Println("租约失效", ok)
-					return
-				} else {
-					// fmt.Println(time.Now().Format(time.DateTime), "租约成功", v, ok)
+	i := 0
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("实例退出")
+			return errors.New("over")
+		case v, ok := <-respCh:
+			if v == nil {
+				// 如果失败了，要重新注册并续租
+				fmt.Println("续租租约失效", ok)
+				return errors.New("continue")
+			} else {
+				if i%100 == 0 {
+					fmt.Println(time.Now().Format(time.DateTime),
+						"续租租约成功"+fmt.Sprintf("(%v)", i), v, ok)
 				}
+				i++
 			}
 		}
-	}()
+	}
 
 	// 测试租约回收
 	//go func() {
@@ -140,6 +148,4 @@ func registerToEtcd(ctx context.Context, service, addr string) error {
 	//		panic(err)
 	//	}
 	//}()
-
-	return nil
 }

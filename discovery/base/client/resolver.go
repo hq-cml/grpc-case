@@ -16,7 +16,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -30,7 +29,6 @@ func init() {
 // 业务自己的Builder，实现resolver.ResolverBuilder接口
 // 这个Builder将会被注册到resolver包当中，它的作用是用来生成业务自己的Resolver
 type myBuilder struct {
-	client *clientv3.Client
 }
 
 // 用来被注册的时候，生成key
@@ -74,9 +72,9 @@ type myResolver struct {
 
 // 触发解析的逻辑
 func (r *myResolver) ResolveNow(o resolver.ResolveNowOptions) {
-	fmt.Println("Call--------ResolveNow")
+	fmt.Println("Call--------ResolveNow-----Endpoint:", r.target.Endpoint())
 	// 直接从map中取出对应的addrList
-	addrStrs := r.addrsMap[r.target.Endpoint()]
+	addrStrs := r.addrsMap[r.target.Endpoint()] // Endpoint()其实就是
 	instanceList := make([]resolver.Address, len(addrStrs))
 	for i, s := range addrStrs {
 		instanceList[i] = resolver.Address{Addr: s}

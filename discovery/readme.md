@@ -14,19 +14,19 @@ scheme:[//[user[:password]@]host[:port]][/path][?query][#fragment]
 ![avatar](img/rfc3986.png)
 
 ## 核心概念
-* 几个比较抽象的概念，最简单的解释：
-* Resolver：是真正负责维护服务端地址列表的，用于将服务名解析成对应实例列表，同步发送给 Balancer
-* Builder：是用来生成业务自己的Resolver
+* 几个比较抽象的概念，一句话解释：
+* Resolver：是真正负责维护服务端地址列表的（比如从Etcd里面捞出服务当前所有实例，并实时的watch路径），这些实时的实例列表将用来给 Balancer 提供负载均衡
+* Builder：负责创建Resolver，默认使用的DNS，所以如果业务自己要搞Resolver，则需要自己自己根据服务地址（RFC 3986），来生成定制化的Builder
 * Balancer：平衡器，接收从 Resolver 发送的服务端列表，建立并维护（长）连接状态；每次当 Client 发起 Rpc 调用时，按照一定算法从连接池中选择一个连接进行 Rpc 调用
 
 ## Scheme、Builder、Resolver的关系
-* 每个 Scheme 对应一个 Builder
+* 每个 Scheme 对应一个业务自己的 Builder，这个Builder又负责根据Target生成Resolver
 * 相同 Scheme 每个不同 target 对应一个 Resolver, 通过 builder.Build 实例化
+* 这里的Scheme就是上面的xxx，这里所说的target，就对应上面的yyyy
 
 
 ## 核心接口
 gRPC 内置的服务治理功能，开发者在实例化这两个接口之后，就可以实现从指定的 scheme 中获取服务列表，通知 balancer 并与这些服务端建立 RPC 长连接。
-* resolver.Builder Builder 用于 gRPC 内部创建 Resolver 接口的实现，但注意内部声明的 Build() 方法将接口 ClientConn 作为参数传入了， ClientConn结库 是非常重要的结构，其成员 conns map[*addrConn]struct{} 中维护了所有从注册中心获取到的服务端列表。
 ```
 // Builder creates a resolver that will be used to watch name resolution updates.
 type Builder interface {
@@ -62,13 +62,12 @@ type Resolver interface {
 
 
 ```
+大致原理：
 1）客户端启动时，注册自定义的 resolver 。
-    一般在 init() 方法，构造自定义的 resolveBuilder，并将其注册到 grpc 内部的 resolveBuilder 表中（其实是一个全局 map，key 为协议名，value 为构造的 resolveBuilder）。
+    一般在 init() 方法，构造自定义的 resolveBuilder，并将其注册到 grpc 内部的 resolveBuilder 表中（其实是一个全局 map，key 为scheme名，value 为构造的 resolveBuilder）。
 2）客户端启动时通过自定义 Dail() 方法构造 grpc.ClientConn 单例
     grpc.DialContext() 方法内部解析 URI，分析协议类型，并从 resolveBuilder 表中查找协议对应的 resolverBuilder。
     找到指定的 resolveBuilder 后，调用 resolveBuilder 的 Build() 方法，构建自定义 resolver，同时开启协程，通过此 resolver 更新被调服务实例列表。
-    Dial() 方法接收主调服务名和被调服务名，并根据自定义的协议名，基于这两个参数构造服务的 URI
-    Dial() 方法内部使用构造的 URI，调用 grpc.DialContext() 方法对指定服务进行拨号
 3）grpc 底层 LB 库对每个实例均创建一个 subConnection，最终根据相应的 LB 策略，选择合适的 subConnection 处理某次 RPC 请求。
 ```
 
