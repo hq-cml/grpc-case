@@ -11,13 +11,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
-	"grpc-case/simple/pb"
+	"grpc-case/common"
+	"grpc-case/pb"
 	"net"
 	"sync"
-)
-
-const (
-	KeyPath = "/data/share/golang/src/github.com/hq-cml/grpc-case/tls/key/"
 )
 
 // 业务自己的Server，实现各个服务端方法
@@ -46,7 +43,7 @@ func (m *MyServer) check(ctx context.Context) (bool, string) {
 	}
 
 	// 这里模拟从某个存储上，取出服务端维护的appId和appKey
-	if appId != "123" && appKey != "abc" {
+	if appId != common.AppId || appKey != common.AppKey {
 		return false, "校验失败"
 	}
 	return true, ""
@@ -75,7 +72,7 @@ func main() {
 	//}
 
 	// 创建监听端口
-	listener, err := net.Listen("tcp", ":9090")
+	listener, err := net.Listen("tcp", ":"+common.BackEndPort0)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +88,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		fmt.Println("Token Server start!")
+		fmt.Println("Token Server start! Port:" + common.BackEndPort0)
 		defer wg.Done()
 		err = grpcServer.Serve(listener)
 		if err != nil {

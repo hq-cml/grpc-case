@@ -8,11 +8,8 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"grpc-case/simple/pb"
-)
-
-const (
-	KeyPath = "/data/share/golang/src/github.com/hq-cml/grpc-case/tls/key/"
+	"grpc-case/common"
+	"grpc-case/pb"
 )
 
 // 自实现Token认证，实现credentials.PerRPCCredentials接口
@@ -23,8 +20,8 @@ type MyClientTokenAuth struct {
 // 这东西要带给服务端，去做多租校验
 func (m *MyClientTokenAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	return map[string]string{
-		"appId":  "123",
-		"appKey": "abc",
+		"appId":  common.AppId,
+		"appKey": common.AppKey,
 	}, nil
 }
 
@@ -42,8 +39,8 @@ func main() {
 	//}
 
 	// 创建连接
-	//conn, err := grpc.NewClient("127.0.0.1:9090", grpc.WithTransportCredentials(creds))
-	conn, err := grpc.NewClient("127.0.0.1:9090",
+	//conn, err := grpc.NewClient(common.BackEnd0, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.NewClient(common.BackEnd0,
 		grpc.WithTransportCredentials(insecure.NewCredentials()), // 不使用tls
 		grpc.WithPerRPCCredentials(new(MyClientTokenAuth)))       // 使用自实现的Token
 	if err != nil {

@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"grpc-case/simple/pb"
+	"grpc-case/common"
+	"grpc-case/pb"
 )
 
 const (
@@ -24,8 +25,8 @@ func main() {
 	}
 
 	// 创建链接，此处设置证书
-	//conn, err := grpc.NewClient("127.0.0.1:9090", grpc.WithTransportCredentials(insecure.NewCredentials())) // 不指定证书，将会得到错误
-	conn, err := grpc.NewClient("127.0.0.1:9090", grpc.WithTransportCredentials(creds))
+	//conn, err := grpc.NewClient(common.BackEnd0, grpc.WithTransportCredentials(insecure.NewCredentials())) // 不指定证书，将会得到错误
+	conn, err := grpc.NewClient(common.BackEnd0, grpc.WithTransportCredentials(creds))
 	if err != nil {
 		panic(err)
 	}
