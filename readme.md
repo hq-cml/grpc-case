@@ -44,6 +44,9 @@ tls
     基于tls认证的server和client，使用自建证书，说明问题
 token
     基于token认证的server和client（简单理解就是多租户服务的ak,sk)
-discovery_base
-    简单的服务发现例子，不涉及Etcd，说明问题本质原理
+discovery
+    basic：服务发现简单的服务发现例子，不涉及Etcd，说明问题本质原理
+    etcd：基于Etcd的服务发现
+balancer
+    负载均衡
 ```

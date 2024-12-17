@@ -7,7 +7,8 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
-	"grpc-case/simple/pb"
+	"grpc-case/common"
+	"grpc-case/pb"
 	"net"
 	"sync"
 )
@@ -21,14 +22,14 @@ type MyServer struct {
 func (m *MyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.HelloReply, error) {
 	fmt.Println("Recv Request:", req.Name)
 	return &pb.HelloReply{
-		Message: "Hello " + req.Name,
+		Message: "Hello bar",
 	}, nil
 }
 
 // 服务启动起来
 func main() {
 	// 创建监听端口
-	listener, err := net.Listen("tcp", ":9090")
+	listener, err := net.Listen("tcp", ":"+common.BackEndPort0)
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +44,7 @@ func main() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		fmt.Println("Simple Server start!")
+		fmt.Println("Simple Server start!. Port:" + common.BackEndPort0)
 		defer wg.Done()
 		err = grpcServer.Serve(listener)
 		if err != nil {
