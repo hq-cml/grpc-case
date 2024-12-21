@@ -11,16 +11,17 @@ import (
 	"fmt"
 	etcdCLientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
-	"grpc-case/discovery/basic"
-	"grpc-case/simple/pb"
+	"grpc-case/common"
+	"grpc-case/pb"
 	"net"
+	"strings"
 	"sync"
 	"time"
 )
 
-var portStr *string = flag.String("p", "9090", "port")
-var nameStr *string = flag.String("n", "myservicename1", "service name")
-var scheme *string = flag.String("s", "etcd", "scheme")
+var portStr *string = flag.String("p", common.BackEndPort0, "port")
+var nameStr *string = flag.String("n", common.MyServiceNameEtcd, "service name")
+var scheme *string = flag.String("s", common.MySchemeEtcd, "scheme")
 
 // 业务自己的Server，实现各个服务端方法
 type MyServer struct {
@@ -41,7 +42,12 @@ func main() {
 	flag.Parse()
 
 	// 创建监听端口
-	addr := "127.0.0.1:" + *portStr
+	addr := common.BackEnd0
+	if strings.Contains(common.BackEnd1, *portStr) {
+		addr = common.BackEnd1
+	} else if strings.Contains(common.BackEnd2, *portStr) {
+		addr = common.BackEnd2
+	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
@@ -68,10 +74,11 @@ func main() {
 
 	// 服务注册到Etcd
 	go func() {
+		// 无限循环等待，注册
 		for {
 			err = registerToEtcd(ctx, *nameStr, addr)
 			if err != nil && err.Error() == "over" {
-				fmt.Println("退出")
+				fmt.Println("正常退出")
 				return
 			} else {
 				fmt.Println("遇到问题：" + err.Error() + ". 准备重新注册！！！！！！！")
@@ -90,8 +97,8 @@ func main() {
 func registerToEtcd(ctx context.Context, service, addr string) error {
 	// 创建客户端
 	etcdCli, err := etcdCLientv3.New(etcdCLientv3.Config{
-		Endpoints:   []string{basic.EtcdAddr},
-		DialTimeout: basic.EtcdTimeout * time.Second,
+		Endpoints:   []string{common.EtcdAddr},
+		DialTimeout: common.EtcdTimeout * time.Second,
 	})
 	if err != nil {
 		return fmt.Errorf("etcdCLientv3.New Error:%v", err)
@@ -105,7 +112,7 @@ func registerToEtcd(ctx context.Context, service, addr string) error {
 	fmt.Println("申请租约：Grant-------", resp.ID)
 
 	// 注册
-	key := basic.GenInstancePath(*scheme, service, addr)
+	key := common.GenInstancePath(*scheme, service, addr)
 	_, err = etcdCli.Put(ctx, key, addr, etcdCLientv3.WithLease(resp.ID))
 	if err != nil {
 		return fmt.Errorf("Etcd Put Err:%v", err)

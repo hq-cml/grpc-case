@@ -11,7 +11,8 @@
  *  is built for each ClientConn. The Resolver will watch the updates for the
  *  target, and send updates to the ClientConn.
  */
-package main
+// Note：这里单独立出一个包，因为balancer也会需要导入
+package resolver
 
 import (
 	"context"
@@ -21,7 +22,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	etcdCLientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
-	"grpc-case/discovery/basic"
+	"grpc-case/common"
 	"strings"
 	"sync"
 	"time"
@@ -32,8 +33,8 @@ import (
 // Builder有一个Scheme方法，用来指定自身的Key（grpc内部有Map[scheme]=>Builder）
 func init() {
 	etcdCli, err := etcdCLientv3.New(etcdCLientv3.Config{
-		Endpoints:   []string{basic.EtcdAddr},
-		DialTimeout: basic.EtcdTimeout * time.Second,
+		Endpoints:   []string{common.EtcdAddr},
+		DialTimeout: common.EtcdTimeout * time.Second,
 	})
 	if err != nil {
 		panic(err)
@@ -52,7 +53,7 @@ type etcdBuilder struct {
 
 // 用来被注册的时候，生成key
 func (*etcdBuilder) Scheme() string {
-	return myScheme
+	return common.MySchemeEtcd
 }
 
 // 创建并返回业务自己的Resolver实例
@@ -60,9 +61,11 @@ func (eb *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, opt
 	s, _ := json.Marshal(target.URL)
 	fmt.Printf("Call--------Build. Parsed Target.URL: %v\n", string(s))
 	targetName := target.Endpoint()
+	fmt.Printf("targetName------- %v\n", targetName)
+	watchPath := common.GenBasePath(common.MySchemeEtcd, targetName)
 	// 初始化先读取路径下的配置
 	var initAddrs []string
-	getResp, err := eb.client.Get(context.Background(), basic.GenBasePath(myScheme, targetName), clientv3.WithPrefix())
+	getResp, err := eb.client.Get(context.Background(), watchPath, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	} else {
@@ -87,8 +90,8 @@ func (eb *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, opt
 	go func() {
 		//cctx, cancel := context.WithTimeout(context.TODO(), 5*time.Minute)
 		//defer cancel()
-		fmt.Println("Watch----", basic.GenBasePath(myScheme, targetName))
-		rch := eb.client.Watch(context.Background(), basic.GenBasePath(myScheme, targetName), clientv3.WithPrefix(), clientv3.WithRev(getResp.Header.Revision))
+		fmt.Println("Watch--------", watchPath)
+		rch := eb.client.Watch(context.Background(), watchPath, clientv3.WithPrefix(), clientv3.WithRev(getResp.Header.Revision))
 		for n := range rch {
 			var needRefresh bool
 			for _, ev := range n.Events {
@@ -144,7 +147,7 @@ func (r *etcdResolver) ResolveNow(o resolver.ResolveNowOptions) {
 	fmt.Println("Call--------ResolveNow")
 	// 直接从map中取出对应的addrList
 	r.mu.RLock()
-	addrStrs := r.addrsMap[r.target.Endpoint()] // 这里其实就是path
+	addrStrs := r.addrsMap[r.target.Endpoint()] // 这里其实就是path: myservicename_etcd
 	if len(addrStrs) == 0 {
 		return
 	}
