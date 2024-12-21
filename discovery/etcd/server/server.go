@@ -36,6 +36,13 @@ func (m *MyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.Hell
 	}, nil
 }
 
+//Note:
+//提前启动Etcd
+//服务端提前启动3个实例（这里为了说明原理，所以手动启）
+//go run server.go -p 9090
+//go run server.go -p 9091
+//go run server.go -p 9092
+
 // 服务启动起来
 func main() {
 	// 参数解析

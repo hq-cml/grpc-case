@@ -31,11 +31,10 @@ func (m *MyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.Hell
 	}, nil
 }
 
-// 服务端提前启动2个实例（这里为了说明原理，所以手动启）
-//const (
-//	backend1 = "127.0.0.1:9090"
-//	backend2 = "127.0.0.1:9091"
-//)
+//Note:
+//服务端提前启动2个实例（这里为了说明原理，所以手动启）
+//go run server.go -p 9090
+//go run server.go -p 9091
 
 // 服务启动起来
 func main() {

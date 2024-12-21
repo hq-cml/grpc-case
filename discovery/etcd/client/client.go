@@ -15,6 +15,7 @@ import (
 	"time"
 )
 
+// 启动go run client.go
 func main() {
 	// 访问服务端address,创建连接conn,地址格式 myScheme:///myServiceName
 	// 函数中会先根据myScheme这个scheme找到我们通过init函数注册的myBuilder，
