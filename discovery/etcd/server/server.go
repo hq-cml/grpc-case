@@ -11,7 +11,7 @@ import (
 	"fmt"
 	etcdCLientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
-	"grpc-case/discovery/base"
+	"grpc-case/discovery/basic"
 	"grpc-case/simple/pb"
 	"net"
 	"sync"
@@ -90,8 +90,8 @@ func main() {
 func registerToEtcd(ctx context.Context, service, addr string) error {
 	// 创建客户端
 	etcdCli, err := etcdCLientv3.New(etcdCLientv3.Config{
-		Endpoints:   []string{base.EtcdAddr},
-		DialTimeout: base.EtcdTimeout * time.Second,
+		Endpoints:   []string{basic.EtcdAddr},
+		DialTimeout: basic.EtcdTimeout * time.Second,
 	})
 	if err != nil {
 		return fmt.Errorf("etcdCLientv3.New Error:%v", err)
@@ -105,7 +105,7 @@ func registerToEtcd(ctx context.Context, service, addr string) error {
 	fmt.Println("申请租约：Grant-------", resp.ID)
 
 	// 注册
-	key := base.GenInstancePath(*scheme, service, addr)
+	key := basic.GenInstancePath(*scheme, service, addr)
 	_, err = etcdCli.Put(ctx, key, addr, etcdCLientv3.WithLease(resp.ID))
 	if err != nil {
 		return fmt.Errorf("Etcd Put Err:%v", err)

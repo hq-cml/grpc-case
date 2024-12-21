@@ -21,7 +21,7 @@ import (
 	clientv3 "go.etcd.io/etcd/client/v3"
 	etcdCLientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc/resolver"
-	"grpc-case/discovery/base"
+	"grpc-case/discovery/basic"
 	"strings"
 	"sync"
 	"time"
@@ -32,8 +32,8 @@ import (
 // Builder有一个Scheme方法，用来指定自身的Key（grpc内部有Map[scheme]=>Builder）
 func init() {
 	etcdCli, err := etcdCLientv3.New(etcdCLientv3.Config{
-		Endpoints:   []string{base.EtcdAddr},
-		DialTimeout: base.EtcdTimeout * time.Second,
+		Endpoints:   []string{basic.EtcdAddr},
+		DialTimeout: basic.EtcdTimeout * time.Second,
 	})
 	if err != nil {
 		panic(err)
@@ -62,7 +62,7 @@ func (eb *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, opt
 	targetName := target.Endpoint()
 	// 初始化先读取路径下的配置
 	var initAddrs []string
-	getResp, err := eb.client.Get(context.Background(), base.GenBasePath(myScheme, targetName), clientv3.WithPrefix())
+	getResp, err := eb.client.Get(context.Background(), basic.GenBasePath(myScheme, targetName), clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	} else {
@@ -87,8 +87,8 @@ func (eb *etcdBuilder) Build(target resolver.Target, cc resolver.ClientConn, opt
 	go func() {
 		//cctx, cancel := context.WithTimeout(context.TODO(), 5*time.Minute)
 		//defer cancel()
-		fmt.Println("Watch----", base.GenBasePath(myScheme, targetName))
-		rch := eb.client.Watch(context.Background(), base.GenBasePath(myScheme, targetName), clientv3.WithPrefix(), clientv3.WithRev(getResp.Header.Revision))
+		fmt.Println("Watch----", basic.GenBasePath(myScheme, targetName))
+		rch := eb.client.Watch(context.Background(), basic.GenBasePath(myScheme, targetName), clientv3.WithPrefix(), clientv3.WithRev(getResp.Header.Revision))
 		for n := range rch {
 			var needRefresh bool
 			for _, ev := range n.Events {

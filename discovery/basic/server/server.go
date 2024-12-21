@@ -10,12 +10,13 @@ import (
 	"flag"
 	"fmt"
 	"google.golang.org/grpc"
-	"grpc-case/simple/pb"
+	"grpc-case/common"
+	"grpc-case/pb"
 	"net"
 	"sync"
 )
 
-var portStr *string = flag.String("p", "9090", "port")
+var portStr *string = flag.String("p", common.BackEndPort0, "port")
 
 // 业务自己的Server，实现各个服务端方法
 type MyServer struct {
@@ -29,6 +30,12 @@ func (m *MyServer) SayHello(ctx context.Context, req *pb.HelloRequest) (*pb.Hell
 		Message: "Hello " + req.Name,
 	}, nil
 }
+
+// 服务端提前启动2个实例（这里为了说明原理，所以手动启）
+//const (
+//	backend1 = "127.0.0.1:9090"
+//	backend2 = "127.0.0.1:9091"
+//)
 
 // 服务启动起来
 func main() {

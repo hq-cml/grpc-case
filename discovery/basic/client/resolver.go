@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"google.golang.org/grpc/resolver"
+	"grpc-case/common"
 )
 
 // 将自定义的Resolver注册到grpc中
@@ -33,24 +34,32 @@ type myBuilder struct {
 
 // 用来被注册的时候，生成key
 func (*myBuilder) Scheme() string {
-	return myScheme
+	return common.MyScheme
+}
+
+// 业务自己的Resolver，实现resolver.Resolver接口
+// 这个Resolver是真正负责维护服务端地址列表的，用于将服务名解析成对应实例列表
+type myResolver struct {
+	target   resolver.Target
+	cc       resolver.ClientConn
+	addrsMap map[string][]string // serviceName => []backendIpPort
 }
 
 // 创建并返回业务自己的Resolver实例
+// 注意这里一个Builder可以生成多种Resolver，主要取决于target的不同
 func (*myBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	s, _ := json.Marshal(target.URL)
 	fmt.Printf("Call--------Build. Parsed Target.URL: %v\n", string(s))
 
-	// TODO 实际上，应该是根据不同的target，生成不用的Resolver
-
 	// 这里为了简便，直接创建Resolver
+	// Note： 实际上，应该是根据不同的target，生成不用的Resolver
 	myResolver := &myResolver{
 		target: target,
 		cc:     cc,
 		addrsMap: map[string][]string{
-			myServiceName: []string{
-				backend1,
-				backend2,
+			common.MyServiceName: []string{
+				common.BackEnd0,
+				common.BackEnd1,
 			},
 		},
 	}
@@ -60,14 +69,6 @@ func (*myBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts res
 	// 强制触发一次更新
 	myResolver.ResolveNow(resolver.ResolveNowOptions{})
 	return myResolver, nil
-}
-
-// 业务自己的Resolver，实现resolver.Resolver接口
-// 这个Resolver是真正负责维护服务端地址列表的，用于将服务名解析成对应实例列表
-type myResolver struct {
-	target   resolver.Target
-	cc       resolver.ClientConn
-	addrsMap map[string][]string // serviceName => []backendIpPort
 }
 
 // 触发解析的逻辑
