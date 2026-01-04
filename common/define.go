@@ -25,6 +25,7 @@ const (
 )
 
 // 生成服务在Etcd中的注册路径：
+// $scheme/$serviceName/$addr
 func GenInstancePath(scheme, serviceName, addr string) string {
 	return strings.Join([]string{GenBasePath(scheme, serviceName), addr}, "/")
 }

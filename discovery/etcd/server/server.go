@@ -110,6 +110,7 @@ func registerToEtcd(ctx context.Context, service, addr string) error {
 	if err != nil {
 		return fmt.Errorf("etcdCLientv3.New Error:%v", err)
 	}
+	defer etcdCli.Close()
 
 	// 创建租约
 	resp, err := etcdCli.Grant(ctx, 2) // ttl = 2，表示存活时间是2秒，如果不续约就消失
